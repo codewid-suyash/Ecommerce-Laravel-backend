@@ -77,7 +77,7 @@ class AccountController extends Controller
         $order = Order::where([
             'user_id' => $request->user()->id,
             'id' => $id
-        ])->with('items')->first();
+        ])->with('items','items.product')->first();
         if ($order == null) {
             return response()->json([
                 'status' => 404,
@@ -89,5 +89,71 @@ class AccountController extends Controller
                 'data' => $order
             ], 200);
         }
+    }
+
+    public function getOrders(Request $request){
+        $orders = Order::where('user_id',$request->user()->id)->with('items')->get();
+        return response()->json([
+            'status' => 200,
+            'data' => $orders
+        ], 200);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = User::find($request->user()->id);
+        if (!$user) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        $validate = Validator::make($request->all(), [
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,'.$request->user()->id.',id',
+            'mobile' => 'required|string',
+            'address' => 'required|string',
+            'city' => 'required|string',
+            'state' => 'required|string',
+            'zip' => 'required|string'
+        ]);
+        if ($validate->fails()) {
+            return response()->json([
+                'status' => 400,
+                'errors' => $validate->errors()
+            ], 400);
+        }
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->mobile = $request->mobile;
+        $user->address = $request->address;
+        $user->city = $request->city;
+        $user->state = $request->state;
+        $user->zip = $request->zip;
+        $user->save();
+
+        return response()->json([
+            'status' => 200,
+            'data' => $user,
+            'message' => 'Profile updated successfully'
+        ], 200);
+    }
+
+    public function getAccountDetails(Request $request)
+    {
+        $user = User::find($request->user()->id);
+        if (!$user) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'data' => $user
+        ], 200);
     }
 }
